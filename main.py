@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 import csv
 import smtplib
 from settings import email, password, recipients
+import re
 
 class WebScraper:
     """
@@ -31,7 +32,7 @@ class WebScraper:
         cat_names_raw = soup.find_all('h3', attrs={'class': 'item__title'})
         cat_urls_raw = soup.find_all('a', attrs={'class': 'item__link'})
         cat_names = [x.text.strip() for x in cat_names_raw]
-        cat_urls = [x['href'] for x in cat_urls_raw]
+        cat_urls = [("https://www.bluecross.org.uk" + x['href']) for x in cat_urls_raw]
         print(cat_names)
         return zip(cat_names, cat_urls)
 
@@ -64,7 +65,7 @@ class WebScraper:
 
         msg = "Subject: Cat Updates\n\n"
         for new_cat in new_cats:
-            msg += new_cat[0] + ": https://www.bluecross.org.uk" + new_cat[1] + "\n"
+            msg += new_cat[0] + ": " + new_cat[1] + "\n"
         print(msg)
         for recipient in recipients:
             server.sendmail(email, recipient, msg)
@@ -83,7 +84,10 @@ class WebScraperWoodGreen(WebScraper):
         returns:
         [[<cat name>, <cat page url>],..]
         """
-        cat_page = "https://www.bluecross.org.uk/rehome/cat?f[0]=field_centre_single:154&f[1]=field_reserved:0&f[2]=field_species_single:9&view_name=find-a-pet&facet_field=field_species_single&display_name=page"
+        cat_pages = ["https://www.woodgreen.org.uk/rehome/cats/filter/heydon",
+                    "https://www.woodgreen.org.uk/rehome/cats/filter/heydon/p2",
+                    "https://www.woodgreen.org.uk/rehome/cats/filter/godmanchester",
+                    "https://www.woodgreen.org.uk/rehome/cats/filter/godmanchester/p2"]
         # Extra headers required to not get 403, used ones from https://stackoverflow.com/questions/13303449/urllib2-httperror-http-error-403-forbidden
         hdr = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11',
                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
@@ -92,18 +96,26 @@ class WebScraperWoodGreen(WebScraper):
                'Accept-Language': 'en-US,en;q=0.8',
                'Connection': 'keep-alive'}
 
-        req = urllib.Request(cat_page, headers=hdr)
-        page = urllib.urlopen(req)
-        soup = BeautifulSoup(page, "html.parser")
+        cat_list = []
+        for cat_page in cat_pages:
+            req = urllib.Request(cat_page, headers=hdr)
+            page = urllib.urlopen(req)
+            soup = BeautifulSoup(page, "html.parser")
 
-        cat_names_raw = soup.find_all('h3', attrs={'class': 'item__title'})
-        cat_urls_raw = soup.find_all('a', attrs={'class': 'item__link'})
-        cat_names = [x.text.strip() for x in cat_names_raw]
-        cat_urls = [x['href'] for x in cat_urls_raw]
-        print(cat_names)
-        return zip(cat_names, cat_urls)
+            cat_names_raw = soup.find_all('h2', attrs={'class': 'article_stub_title'})
+            cat_urls_raw = soup.find_all('a', attrs={'title': re.compile("Continue Reading about")})
+            cat_names = [x.text.strip() for x in cat_names_raw]
+            cat_urls = [x['href'] for x in cat_urls_raw]
+            print(cat_names)
+            print(cat_urls)
+            cat_list += zip(cat_names, cat_urls)
+        print("CAT LIST")
+        print(cat_list)
+        return cat_list
 
 
 if __name__ == "__main__":
-    scraper = webScraper()
+    scraper = WebScraper()
     scraper.run()
+    scraperWoodGreen = WebScraperWoodGreen()
+    scraperWoodGreen.run()
