@@ -6,6 +6,14 @@ from settings import email, password, recipients
 import re
 
 class WebScraper:
+    def __init__(self):
+        # Extra headers required to not get 403, used ones from https://stackoverflow.com/questions/13303449/urllib2-httperror-http-error-403-forbidden
+        self.hdr = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11',
+               'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+               'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.3',
+               'Accept-Encoding': 'none',
+               'Accept-Language': 'en-US,en;q=0.8',
+               'Connection': 'keep-alive'}
     """
     Default class searches bluecross website and emails using gmail
     """
@@ -17,15 +25,7 @@ class WebScraper:
         """
         # Should make this dynamically update the location and other params
         cat_page = "https://www.bluecross.org.uk/rehome/cat?f[0]=field_centre_single:154&f[1]=field_reserved:0&f[2]=field_species_single:9&view_name=find-a-pet&facet_field=field_species_single&display_name=page"
-        # Extra headers required to not get 403, used ones from https://stackoverflow.com/questions/13303449/urllib2-httperror-http-error-403-forbidden
-        hdr = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11',
-               'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-               'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.3',
-               'Accept-Encoding': 'none',
-               'Accept-Language': 'en-US,en;q=0.8',
-               'Connection': 'keep-alive'}
-
-        req = urllib.Request(cat_page, headers=hdr)
+        req = urllib.Request(cat_page, headers=self.hdr)
         page = urllib.urlopen(req)
         soup = BeautifulSoup(page, "html.parser")
 
@@ -51,7 +51,7 @@ class WebScraper:
             csv_writer = csv.writer(csv_file)
             for cat in new_cats:
                 print("Write row: {}".format(cat))
-                csv_writer.writerow([cat[0]])
+                csv_writer.writerow([cat[0], cat[1]])
 
     def send_email(self, new_cats):
         """
@@ -75,7 +75,7 @@ class WebScraper:
         new_cats = self.check_existing(cat_names)
         if new_cats:
             self.write_new(new_cats)
-            self.send_email(new_cats)
+            #self.send_email(new_cats)
 
 class WebScraperWoodGreen(WebScraper):
     def scrape_website(self):
@@ -88,17 +88,10 @@ class WebScraperWoodGreen(WebScraper):
                     "https://www.woodgreen.org.uk/rehome/cats/filter/heydon/p2",
                     "https://www.woodgreen.org.uk/rehome/cats/filter/godmanchester",
                     "https://www.woodgreen.org.uk/rehome/cats/filter/godmanchester/p2"]
-        # Extra headers required to not get 403, used ones from https://stackoverflow.com/questions/13303449/urllib2-httperror-http-error-403-forbidden
-        hdr = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11',
-               'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-               'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.3',
-               'Accept-Encoding': 'none',
-               'Accept-Language': 'en-US,en;q=0.8',
-               'Connection': 'keep-alive'}
 
         cat_list = []
         for cat_page in cat_pages:
-            req = urllib.Request(cat_page, headers=hdr)
+            req = urllib.Request(cat_page, headers=self.hdr)
             page = urllib.urlopen(req)
             soup = BeautifulSoup(page, "html.parser")
 
